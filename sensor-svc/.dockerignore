@@ -1,0 +1,37 @@
+# Git
+.git
+.gitignore
+
+# Build outputs
+bin
+obj
+out*
+# Allow published outputs
+!out-linux-arm64/
+!out-linux-musl-arm64/
+
+# IDE
+.vscode
+.idea
+*.suo
+*.user
+*.rsuser
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Python
+__pycache__
+*.pyc
+
+# Node
+node_modules
+
+# Misc
+*.tar
+.env
+.secrets

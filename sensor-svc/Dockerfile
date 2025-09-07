@@ -1,22 +1,12 @@
-# syntax=docker/dockerfile:1.7-labs
-
-FROM mcr.microsoft.com/dotnet/sdk:8.0.401-bookworm-slim AS build
-WORKDIR /src
-# Copy entire project first to avoid restore crash and allow proper graph evaluation
-COPY . .
-# Publish (will perform restore implicitly)
-RUN DOTNET_CLI_TELEMETRY_OPTOUT=1 NUGET_XMLDOC_MODE=skip dotnet publish ./sensor.csproj -c Release -o /out -r linux-arm64 --self-contained true /p:PublishTrimmed=true /p:PublishSingleFile=true
-
-FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-alpine AS runtime
+# Runtime-only image. Build/publish on host first, then build this image.
+FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-bookworm-slim
 WORKDIR /app
 ENV ASPNETCORE_URLS=http://0.0.0.0:8080
-# Create non-root user (idempotent for Alpine)
-RUN addgroup -S -g 10001 app 2>/dev/null || true && \
-    adduser -S -D -H -u 10001 -G app app 2>/dev/null || true
+# Non-root user (idempotent)
+RUN groupadd -g 10001 app 2>/dev/null || true && \
+    useradd -r -u 10001 -g app app 2>/dev/null || true
 USER app
-COPY --from=build /out/ ./
+# Copy prebuilt artifacts (publish on host with -r linux-arm64)
+COPY ./out-linux-arm64/ ./
 EXPOSE 8080
-ENTRYPOINT ["./sensor-svc"]
-
-
-
+ENTRYPOINT ["./sensor"]

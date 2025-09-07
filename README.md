@@ -12,8 +12,17 @@ Minimal .NET 8 service for ARM64 containers (Raspberry Pi class) with runtime po
 - PlantUML diagrams for FSM and runtime architecture
 
 ## Build
+Publish on host first (Dockerfile copies from `sensor-svc/out-linux-arm64`):
 ```bash
-# Build multi-arch (ARM64) image
+cd sensor-svc
+dotnet restore
+# Debian/glibc runtime
+dotnet publish -c Release -r linux-arm64 --self-contained true \
+  -p:PublishTrimmed=true -p:PublishSingleFile=true -o out-linux-arm64
+cd ..
+```
+Build image (runtime-only):
+```bash
 docker buildx build --platform linux/arm64 -t demo/sensor-svc:arm64 ./sensor-svc
 ```
 
@@ -65,7 +74,7 @@ python3 scripts/plot_from_csv.py stats_tuned.csv
 
 ## Notes
 - Container runs as non-root user
-- Runtime image: `mcr.microsoft.com/dotnet/runtime-deps:8.0-alpine`
+- Runtime image: `mcr.microsoft.com/dotnet/runtime-deps:8.0-bookworm-slim`
 - Publish is trimmed, self-contained for `linux-arm64`
 
 ## Docs

@@ -1,0 +1,44 @@
+# .NET build artifacts
+bin/
+obj/
+**/bin/
+**/obj/
+
+# Publish outputs
+**/out*/
+
+# User-specific files
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Python venv and cache
+.venv/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+
+# Docker
+*.pid
+*.tar
+
+# Misc
+.env
+.secrets/
