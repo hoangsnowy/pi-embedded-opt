@@ -1,0 +1,14 @@
+services:
+  sensor:
+    build:
+      context: ./sensor-svc
+    image: demo/sensor-svc:arm64
+    platform: linux/arm64
+    environment:
+      POWER_FSM: "0"
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+
+

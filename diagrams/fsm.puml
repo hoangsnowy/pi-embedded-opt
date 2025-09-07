@@ -1,0 +1,17 @@
+@startuml
+title Application Power FSM
+
+[*] --> Active
+
+state Active
+state Idle
+state Sleep
+
+Active --> Idle : no request 10s
+Idle --> Sleep : no request +60s
+Idle --> Active : request arrives
+Sleep --> Active : request arrives
+
+@enduml
+
+

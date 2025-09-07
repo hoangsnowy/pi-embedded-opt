@@ -1,0 +1,27 @@
+@startuml
+title Runtime Architecture (ARM64, .NET 8)
+
+rectangle "Host" {
+  node "Docker Engine" {
+    node "Container (ARM64)\nRuntime-Deps:8.0-alpine" {
+      component "sensor-svc\n(REST: /health, /stats, /ui)" as svc
+    }
+  }
+}
+
+cloud "Benchmark Client\nhey/wrk" as bench
+bench --> svc : HTTP
+
+note right of svc
+Baseline:
+- POWER_FSM=0
+Tuned:
+- POWER_FSM=1
+- read_only + tmpfs
+- mem_limit=128m
+- cpus=1.0, pids_limit=128
+end note
+
+@enduml
+
+

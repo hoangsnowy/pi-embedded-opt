@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "X7CbdHlVBvM7AV4BsuaAzOKlbzyLJRXhc5YIV464ry4=",
+  "Source": "sensor",
+  "BasePath": "_content/sensor",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

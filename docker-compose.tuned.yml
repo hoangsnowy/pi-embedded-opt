@@ -1,0 +1,31 @@
+services:
+  sensor:
+    environment:
+      POWER_FSM: "1"
+      SAMPLE_ACTIVE_HZ: "100"
+      SAMPLE_IDLE_HZ: "1"
+      ACTIVE_WINDOW_S: "10"
+      SLEEP_AFTER_S: "60"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: "128M"
+    mem_limit: 128m
+    cpus: 1.0
+    pids_limit: 128
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 2s
+      retries: 3
+      start_period: 5s
+
+
+
