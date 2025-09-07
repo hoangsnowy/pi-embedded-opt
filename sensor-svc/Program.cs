@@ -14,6 +14,7 @@ builder.Services.ConfigureHttpJsonOptions(opt =>
 	opt.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 	opt.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 	opt.SerializerOptions.WriteIndented = false;
+	opt.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonContext.Default);
 });
 
 var app = builder.Build();
@@ -49,16 +50,15 @@ app.MapGet("/stats", () =>
 	var now = DateTimeOffset.UtcNow;
 	var uptimeSeconds = (now - Process.GetCurrentProcess().StartTime.ToUniversalTime()).TotalSeconds;
 	var (p50, p95, _) = latencyMetrics.GetPercentiles();
-	var dto = new
-	{
-		uptime_s = Math.Round(uptimeSeconds, 1),
-		rss_mib = Math.Round(processMetrics.GetRssMiB(), 1),
-		cpu_pct = Math.Round(processMetrics.GetCpuPercent(), 1),
-		p50_ms = Math.Round(p50, 1),
-		p95_ms = Math.Round(p95, 1),
-		state = fsm.CurrentState.ToString()
-	};
-	return Results.Json(dto);
+	var dto = new StatsDto(
+		uptimeSeconds: Math.Round(uptimeSeconds, 1),
+		rssMiB: Math.Round(processMetrics.GetRssMiB(), 1),
+		cpuPercent: Math.Round(processMetrics.GetCpuPercent(), 1),
+		p50Ms: Math.Round(p50, 1),
+		p95Ms: Math.Round(p95, 1),
+		state: fsm.CurrentState.ToString()
+	);
+	return Results.Json(dto, AppJsonContext.Default.StatsDto);
 });
 
 app.MapGet("/ui", async context =>
