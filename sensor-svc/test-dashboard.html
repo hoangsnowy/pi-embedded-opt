@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: white; }
+        .stats { background: #2a2a2a; padding: 20px; border-radius: 10px; margin: 10px 0; }
+        .led-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 10px; margin: 20px 0; }
+        .led { width: 30px; height: 30px; border-radius: 50%; background: #333; border: 2px solid #555; }
+        .led.on { background: #00ff00; }
+        .button { padding: 10px 20px; margin: 5px; background: #007acc; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .button:hover { background: #005a9e; }
+        .energy { background: #2a2a2a; padding: 20px; border-radius: 10px; margin: 10px 0; }
+        .energy input { width: 80px; margin: 5px; padding: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Dashboard - Pi Embedded Optimization</h1>
+    
+    <div class="stats">
+        <h3>📊 System Stats</h3>
+        <p>Uptime: <span id="uptime">0</span>s</p>
+        <p>Memory: <span id="memory">0</span> MB</p>
+        <p>CPU: <span id="cpu">0</span>%</p>
+        <p>State: <span id="state">Active</span></p>
+    </div>
+    
+    <div class="led-grid" id="ledGrid">
+        <!-- LEDs will be generated here -->
+    </div>
+    
+    <div>
+        <button class="button" onclick="simulateButton()">🔥 Simulate Button (B)</button>
+        <button class="button" onclick="generateLoad()">⚡ Generate Load (L)</button>
+        <button class="button" onclick="toggleRefresh()">🔄 Toggle Auto-refresh</button>
+    </div>
+    
+    <div>
+        <label>Active LEDs (bar): </label>
+        <input type="range" id="ledSlider" min="0" max="10" value="0" onchange="updateBarPattern()">
+        <span id="ledCount">0</span>
+    </div>
+    
+    <div class="energy">
+        <h3>⚡ Energy Panel</h3>
+        <div>
+            <label>P_active (mW):</label>
+            <input type="number" id="pact" value="1200" step="10">
+            <label>P_idle:</label>
+            <input type="number" id="pidle" value="400" step="10">
+            <label>P_sleep:</label>
+            <input type="number" id="psleep" value="80" step="10">
+            <button class="button" onclick="computeEnergy()">Compute</button>
+            <button class="button" onclick="resetEnergy()">Reset</button>
+        </div>
+        <div>
+            <p>mWh: <span id="mwh">0.000</span></p>
+            <p>Active: <span id="sact">0</span>s • Idle: <span id="sidle">0</span>s • Sleep: <span id="sslp">0</span>s</p>
+        </div>
+    </div>
+    
+    <div>
+        <label><input type="checkbox" id="ecoMode" onchange="toggleEcoMode()"> Eco Mode</label>
+        <span id="lowPower" style="display:none; color: orange;">LOW POWER</span>
+    </div>
+
+    <script>
+        let autoRefresh = true;
+        let refreshInterval = 500;
+        let ledStates = new Array(10).fill(false);
+        
+        // Initialize LED grid
+        function initLEDs() {
+            const grid = document.getElementById('ledGrid');
+            grid.innerHTML = '';
+            for (let i = 0; i < 10; i++) {
+                const led = document.createElement('div');
+                led.className = 'led';
+                led.id = `led-${i}`;
+                grid.appendChild(led);
+            }
+        }
+        
+        // Update LED display
+        function updateLEDs() {
+            for (let i = 0; i < 10; i++) {
+                const led = document.getElementById(`led-${i}`);
+                led.className = ledStates[i] ? 'led on' : 'led';
+            }
+        }
+        
+        // Simulate button press
+        function simulateButton() {
+            alert('Button pressed! This would trigger CPU load simulation.');
+            // In real app, this would call /button/press endpoint
+        }
+        
+        // Generate load
+        function generateLoad() {
+            alert('Load generated! This would trigger heavy CPU load.');
+            // In real app, this would call /load endpoint
+        }
+        
+        // Toggle auto-refresh
+        function toggleRefresh() {
+            autoRefresh = !autoRefresh;
+            if (autoRefresh) {
+                startPolling();
+            } else {
+                stopPolling();
+            }
+        }
+        
+        // Update bar pattern
+        function updateBarPattern() {
+            const count = parseInt(document.getElementById('ledSlider').value);
+            document.getElementById('ledCount').textContent = count;
+            
+            // Update LED states
+            for (let i = 0; i < 10; i++) {
+                ledStates[i] = i < count;
+            }
+            updateLEDs();
+        }
+        
+        // Compute energy
+        function computeEnergy() {
+            const pact = parseFloat(document.getElementById('pact').value);
+            const pidle = parseFloat(document.getElementById('pidle').value);
+            const psleep = parseFloat(document.getElementById('psleep').value);
+            
+            // Simulate energy calculation
+            const sact = 10.0;
+            const sidle = 5.0;
+            const sslp = 2.0;
+            const mwh = (pact * sact + pidle * sidle + psleep * sslp) / 3600.0;
+            
+            document.getElementById('mwh').textContent = mwh.toFixed(3);
+            document.getElementById('sact').textContent = sact.toFixed(1);
+            document.getElementById('sidle').textContent = sidle.toFixed(1);
+            document.getElementById('sslp').textContent = sslp.toFixed(1);
+        }
+        
+        // Reset energy
+        function resetEnergy() {
+            document.getElementById('mwh').textContent = '0.000';
+            document.getElementById('sact').textContent = '0';
+            document.getElementById('sidle').textContent = '0';
+            document.getElementById('sslp').textContent = '0';
+        }
+        
+        // Toggle eco mode
+        function toggleEcoMode() {
+            const ecoMode = document.getElementById('ecoMode').checked;
+            refreshInterval = ecoMode ? 1000 : 500;
+            if (autoRefresh) {
+                stopPolling();
+                startPolling();
+            }
+        }
+        
+        // Polling functions
+        let pollingTimer;
+        
+        function startPolling() {
+            if (pollingTimer) clearInterval(pollingTimer);
+            pollingTimer = setInterval(updateStats, refreshInterval);
+        }
+        
+        function stopPolling() {
+            if (pollingTimer) clearInterval(pollingTimer);
+        }
+        
+        function updateStats() {
+            // Simulate stats update
+            const uptime = Math.floor(Date.now() / 1000) % 1000;
+            const memory = Math.floor(Math.random() * 100) + 50;
+            const cpu = Math.floor(Math.random() * 20) + 5;
+            
+            document.getElementById('uptime').textContent = uptime;
+            document.getElementById('memory').textContent = memory;
+            document.getElementById('cpu').textContent = cpu;
+        }
+        
+        // Initialize
+        initLEDs();
+        updateLEDs();
+        startPolling();
+        
+        // Handle visibility change
+        document.addEventListener('visibilitychange', function() {
+            const lowPower = document.getElementById('lowPower');
+            if (document.hidden) {
+                lowPower.style.display = 'inline';
+                refreshInterval = 2000;
+                if (autoRefresh) {
+                    stopPolling();
+                    startPolling();
+                }
+            } else {
+                lowPower.style.display = 'none';
+                refreshInterval = document.getElementById('ecoMode').checked ? 1000 : 500;
+                if (autoRefresh) {
+                    stopPolling();
+                    startPolling();
+                }
+            }
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'b' || e.key === 'B') {
+                simulateButton();
+            } else if (e.key === 'l' || e.key === 'L') {
+                generateLoad();
+            } else if (e.key === ' ') {
+                e.preventDefault();
+                toggleRefresh();
+            }
+        });
+    </script>
+</body>
+</html>

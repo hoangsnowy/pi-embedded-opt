@@ -8,14 +8,6 @@
           "build/Microsoft.NET.ILLink.Tasks.props": {}
         }
       }
-    },
-    "net8.0/linux-arm64": {
-      "Microsoft.NET.ILLink.Tasks/8.0.19": {
-        "type": "package",
-        "build": {
-          "build/Microsoft.NET.ILLink.Tasks.props": {}
-        }
-      }
     }
   },
   "libraries": {
@@ -131,20 +123,6 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
-        "downloadDependencies": [
-          {
-            "name": "Microsoft.AspNetCore.App.Runtime.linux-arm64",
-            "version": "[8.0.19, 8.0.19]"
-          },
-          {
-            "name": "Microsoft.NETCore.App.Host.linux-arm64",
-            "version": "[8.0.19, 8.0.19]"
-          },
-          {
-            "name": "Microsoft.NETCore.App.Runtime.linux-arm64",
-            "version": "[8.0.19, 8.0.19]"
-          }
-        ],
         "frameworkReferences": {
           "Microsoft.AspNetCore.App": {
             "privateAssets": "none"
@@ -154,11 +132,6 @@
           }
         },
         "runtimeIdentifierGraphPath": "/usr/lib64/dotnet/sdk/8.0.119/PortableRuntimeIdentifierGraph.json"
-      }
-    },
-    "runtimes": {
-      "linux-arm64": {
-        "#import": []
       }
     }
   }

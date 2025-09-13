@@ -6,6 +6,7 @@ services:
       SAMPLE_IDLE_HZ: "1"
       ACTIVE_WINDOW_S: "10"
       SLEEP_AFTER_S: "60"
+      LED_COUNT: "10"
     deploy:
       resources:
         limits:

@@ -1,13 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "UvJ/GdmoKCBHuarPJaT7FtpVt+OiCbYbQFWFgdsZscx8IFYEs2OsjdFjR0eyjzig7muQtNG9c0BnZeK/1OBJMw==",
+  "dgSpecHash": "9FZjqO4ytD0Ga6fSu2GW6lA4ix6tb8IwcySfC59/7rZm5+YdhT1t91FK4d7/AijwegP9JGxzeDLAgAtVPGXIzg==",
   "success": true,
   "projectFilePath": "/home/hoangsnowy/projects/pi-embedded-opt/sensor-svc/sensor.csproj",
   "expectedPackageFiles": [
-    "/home/hoangsnowy/.nuget/packages/microsoft.net.illink.tasks/8.0.19/microsoft.net.illink.tasks.8.0.19.nupkg.sha512",
-    "/home/hoangsnowy/.nuget/packages/microsoft.netcore.app.runtime.linux-arm64/8.0.19/microsoft.netcore.app.runtime.linux-arm64.8.0.19.nupkg.sha512",
-    "/home/hoangsnowy/.nuget/packages/microsoft.aspnetcore.app.runtime.linux-arm64/8.0.19/microsoft.aspnetcore.app.runtime.linux-arm64.8.0.19.nupkg.sha512",
-    "/home/hoangsnowy/.nuget/packages/microsoft.netcore.app.host.linux-arm64/8.0.19/microsoft.netcore.app.host.linux-arm64.8.0.19.nupkg.sha512"
+    "/home/hoangsnowy/.nuget/packages/microsoft.net.illink.tasks/8.0.19/microsoft.net.illink.tasks.8.0.19.nupkg.sha512"
   ],
   "logs": []
 }

@@ -1,0 +1,11 @@
+# Cursor Rules (lite)
+- READ: README.md
+- READ: docs/CONTEXT.md
+- READ: src/Server/Program.cs
+- READ: ui/PiEmbeddedDashboard.Client/Pages/Index.razor
+- READ: ui/PiEmbeddedDashboard.Client/Components/*.razor
+
+Ritual:
+1) Summarize endpoints, ENV, and UI in ≤12 lines from files above.
+2) Keep polling 500ms + backoff; avoid heavy deps.
+3) When making changes, also update docs/CONTEXT.md.
