@@ -85,8 +85,8 @@ python3 scripts/plot_from_csv.py stats_tuned.csv
 - `GET /leds` → `{pins, states}` (LED_COUNT states)
 - `POST /leds/pattern` → Set LED pattern from binary string
 - `POST /leds/pattern/bar/{n}` → Set first n LEDs on
-- `POST /button/press` → Light CPU load (~2s burst)
-- `POST /load` → Heavy CPU load (~5s)
+- `POST /button/press` → Simulate button press
+- `POST /load` → Generate CPU load
 - `POST /gc` → Force GC (demo memory reclaim)
 - `GET /ui` → HTML dashboard (stats + LEDs poll 0.5–2s; optional auto energy refresh ~1.5s cadence)
 

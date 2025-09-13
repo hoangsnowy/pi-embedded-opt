@@ -35,3 +35,11 @@ node_modules
 *.tar
 .env
 .secrets
+
+# Debug symbols / temp
+*.pdb
+*.swp
+*.tmp
+
+# Keep Dockerfile itself (not ignored) - clarify for future
+!Dockerfile
