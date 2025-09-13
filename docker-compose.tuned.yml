@@ -7,7 +7,8 @@ services:
       ACTIVE_WINDOW_S: "10"
       SLEEP_AFTER_S: "60"
       LED_COUNT: "10"
-    mem_limit: 128m
+      LED_POOL: "1"
+    mem_limit: 512m
     cpus: 1.0
     pids_limit: 128
     read_only: true

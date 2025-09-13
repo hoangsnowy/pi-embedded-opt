@@ -1,11 +1,15 @@
-# Cursor Rules (lite)
-- READ: README.md
-- READ: docs/CONTEXT.md
-- READ: src/Server/Program.cs
-- READ: ui/PiEmbeddedDashboard.Client/Pages/Index.razor
-- READ: ui/PiEmbeddedDashboard.Client/Components/*.razor
+# Cursor Rules (v3)
+ALWAYS-READ:
+  - README.md
+  - docs/CONTEXT.md
+  - sensor-svc/Program.cs
+  - sensor-svc/Ui/UiPage.cs
+  - sensor-svc/Power/PowerFsm.cs
+  - sensor-svc/Infrastructure/*.cs
 
-Ritual:
-1) Summarize endpoints, ENV, and UI in ≤12 lines from files above.
-2) Keep polling 500ms + backoff; avoid heavy deps.
-3) When making changes, also update docs/CONTEXT.md.
+RITUAL:
+  1. In ≤12 lines: endpoints + ENV chính (POWER_FSM, ACTIVE_WINDOW_S, SLEEP_AFTER_S, LED_COUNT, LED_MW, LED_POOL) + UI highlights (Light/Heavy load, eco, energy model).
+  2. Nếu sửa endpoint/ENV/UI → cập nhật `docs/CONTEXT.md` + README.
+  3. Giữ diff tối thiểu, không thêm dependency nặng, giữ publish path `sensor-svc/out-linux-arm64`.
+
+CONFIRM-TOKEN: CURSOR_RULES_V3
