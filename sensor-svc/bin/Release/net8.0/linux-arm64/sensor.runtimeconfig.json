@@ -27,7 +27,9 @@
       "System.StartupHookProvider.IsSupported": false,
       "System.Text.Encoding.EnableUnsafeUTF7Encoding": false,
       "System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault": false,
-      "System.Threading.Thread.EnableAutoreleasePool": false
+      "System.Threading.Thread.EnableAutoreleasePool": false,
+      "Microsoft.AspNetCore.SignalR.Hub.IsCustomAwaitableSupported": false,
+      "Microsoft.AspNetCore.Mvc.ApiExplorer.IsEnhancedModelMetadataSupported": false
     }
   }
 }

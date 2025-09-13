@@ -8,6 +8,9 @@ public static class UiPage
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
 <title>Pi Embedded Dashboard</title>
 <style>
 	:root{--led-dim:1;--bg-primary:#0a0e14;--bg-secondary:#161a21;--bg-tertiary:#222832;--text-primary:#e8e8e8;--text-secondary:#9aa0a6;--accent:#3a4354;--success:#4caf50;--warning:#ff9800;--error:#f44336}
@@ -40,6 +43,8 @@ public static class UiPage
 	.notification.success{background:#10b981}
 	.notification.warning{background:#f59e0b}
 	.notification.error{background:#ef4444}
+	.cpu-flash{animation:cpuFlash 0.8s ease-out}
+	@keyframes cpuFlash{0%{background:rgba(255,152,0,0.2)}50%{background:rgba(255,152,0,0.05)}100%{background:transparent}}
 	@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
 	.energy{background:var(--bg-tertiary);border:1px solid var(--accent);border-radius:12px;padding:15px;margin-top:10px}
 	.energy-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
@@ -55,7 +60,7 @@ public static class UiPage
 	.state-active{color:var(--success)}
 	.state-idle{color:var(--warning)}
 	.state-sleep{color:var(--text-secondary)}
-	.eco :root{--led-dim:0.5}
+	:root.eco{--led-dim:0.5}
 	@media (max-width:768px){.page{padding:15px}.controls{flex-direction:column;align-items:stretch}.energy-row{flex-direction:column;align-items:stretch}.energy-row input{width:100%}}
 </style>
 </head>
@@ -75,13 +80,14 @@ public static class UiPage
 				<div class="led-grid" id="ledGrid"></div>
 				
 				<div class="controls">
-					<button onclick="simulateButton()" class="btn">🔥 Simulate Button (B) - CPU Load 2s</button>
+					<button onclick="lightLoad()" class="btn">🔥 Light Load (B) - CPU 2s</button>
 					<button onclick="generateLoad()" class="btn">⚡ Generate Load (L) - Heavy CPU 5s</button>
+					<button onclick="runGc()" class="btn">🧹 GC Collect</button>
 					<label>
 						💡 Active LEDs (bar): 
-						<input type="range" min="0" max="10" id="ledSlider" onchange="updateBarPattern()" />
+						<input type="range" min="0" max="10" value="0" id="ledSlider" onchange="updateBarPattern()" />
 						<span id="ledCount">0</span>
-						<small>(1MB per LED)</small>
+						<small>(10MB per LED)</small>
 					</label>
 				</div>
 			</div>
@@ -92,6 +98,10 @@ public static class UiPage
 					<label class="toggle">
 						<input type="checkbox" id="ecoMode" onchange="toggleEcoMode()" />
 						Eco mode (Tiết kiệm năng lượng)
+					</label>
+					<label class="toggle">
+						<input type="checkbox" id="autoEnergy" checked onchange="toggleAutoEnergy()" />
+						Auto Energy
 					</label>
 					<span id="lowPowerBadge" class="badge" style="display:none">LOW POWER</span>
 				</div>
@@ -110,13 +120,12 @@ public static class UiPage
 						<button onclick="computeEnergy()" class="btn">📊 Compute mWh</button>
 						<button onclick="resetEnergy()" class="btn">🔄 Reset Times</button>
 					</div>
-				<div class="energy-stats">
-					<span>mWh:</span>
-					<b id="mwh">—</b>
-					<span class="muted" id="timeStats">Active: 0s • Idle: 0s • Sleep: 0s</span>
+				<div class="energy-stats" style="flex-direction:column;align-items:flex-start;gap:6px">
+					<div><span>System mWh:</span> <b id="mwh">—</b> <span class="muted" id="timeStats">Active: 0s • Idle: 0s • Sleep: 0s</span></div>
+					<div id="ledStats">LED: 0sA / 0sI / 0sS • Led mWh: 0 • Total: 0</div>
 				</div>
 				<div class="help-text">
-					<small>💡 Click "Simulate Button" để tạo Active time | Đợi 5s để chuyển Idle | Compute để tính mWh</small>
+					<small>💡 Bấm "Light Load" để tạo Active (~2s) | Đợi không hoạt động 5s để chuyển Idle | "Heavy Load" tạo tải 5s</small>
 				</div>
 				</div>
 			</div>
@@ -161,6 +170,8 @@ let ledStates = new Array(10).fill(false);
 let ecoMode = false;
 let lowPower = false;
 let pollMs = 500;
+let autoEnergy = true;
+let lastEnergyMs = 0;
 
 function set(id, v) {
 	const el = document.getElementById(id);
@@ -215,12 +226,14 @@ async function refreshEnergy() {
 		const r = await fetch(`/energy?Pact=${pact}&Pidle=${pidle}&Psleep=${psleep}`);
 		if (!r.ok) throw new Error('HTTP ' + r.status);
 		const j = await r.json();
-		set('mwh', j.mWh ? j.mWh.toFixed(3) : '—');
+		set('mwh', (typeof j.mWh === 'number') ? j.mWh.toFixed(3) : '—');
 		set('timeStats', `Active: ${j.sAct ? j.sAct.toFixed(1) : '0'}s • Idle: ${j.sIdle ? j.sIdle.toFixed(1) : '0'}s • Sleep: ${j.sSlp ? j.sSlp.toFixed(1) : '0'}s`);
-		
-		// Show warning if all times are 0
+		if (typeof j.ledActSeconds === 'number') {
+			const ledLine = `LED: ${(j.ledActSeconds||0).toFixed(1)}sA / ${(j.ledIdleSeconds||0).toFixed(1)}sI / ${(j.ledSlpSeconds||0).toFixed(1)}sS • Led mWh: ${(j.ledMWh||0).toFixed(3)} • Total: ${(j.totalMWh||0).toFixed(3)}`;
+			const el = document.getElementById('ledStats'); if (el) el.textContent = ledLine;
+		}
 		if (j.sAct === 0 && j.sIdle === 0 && j.sSlp === 0) {
-			showNotification('⚠️ Chưa có hoạt động! Click "Simulate Button" để tạo Active time', 'warning');
+			showNotification('⚠️ Chưa có hoạt động! Bấm "Light Load" hoặc bật vài LED để tạo Active time', 'warning');
 		}
 	} catch (err) {
 		console.error('Failed to load energy:', err);
@@ -241,39 +254,47 @@ async function refreshLeds() {
 	}
 }
 
-async function simulateButton() {
+async function lightLoad() {
 	try {
-		console.log('Simulating button press...');
 		const response = await fetch('/button/press', {method: 'POST'});
 		if (response.ok) {
 			const result = await response.json();
-			console.log('Button pressed successfully:', result.message);
 			showNotification('🔥 Button pressed! CPU load for 2 seconds', 'success');
+			flashCpu();
 		} else {
-			console.error('Button press failed:', response.status);
 			showNotification('❌ Button press failed', 'error');
 		}
 	} catch (err) {
-		console.error('Failed to simulate button:', err);
+		console.error('Failed to run light load:', err);
 		showNotification('❌ Network error', 'error');
 	}
 }
 
 async function generateLoad() {
 	try {
-		console.log('Generating load...');
 		const response = await fetch('/load', {method: 'POST'});
 		if (response.ok) {
 			const result = await response.json();
-			console.log('Load generated successfully:', result.message);
 			showNotification('⚡ Heavy CPU load for 5 seconds!', 'warning');
+			flashCpu();
 		} else {
-			console.error('Load generation failed:', response.status);
 			showNotification('❌ Load generation failed', 'error');
 		}
 	} catch (err) {
 		console.error('Failed to generate load:', err);
 		showNotification('❌ Network error', 'error');
+	}
+}
+
+async function runGc() {
+	try {
+		const r = await fetch('/gc', {method: 'POST'});
+		if (!r.ok) throw new Error('HTTP ' + r.status);
+		const j = await r.json();
+		showNotification(`🧹 GC: before ${j.beforeMB}MB → after ${j.afterMB}MB (Δ ${j.deltaMB}MB)`, 'info');
+		await refreshStats();
+	} catch (e) {
+		showNotification('❌ GC failed', 'error');
 	}
 }
 
@@ -284,7 +305,8 @@ async function updateBarPattern() {
 		const response = await fetch(`/leds/pattern/bar/${n}`, {method: 'POST'});
 		if (response.ok) {
 			await refreshLeds();
-			showNotification(`💡 ${n} LEDs ON (${n}MB memory allocated)`, 'info');
+			if (autoEnergy) await refreshEnergy();
+			showNotification(`💡 ${n} LEDs ON (${n*10}MB memory allocated)`, 'info');
 		} else {
 			showNotification('❌ Failed to update LEDs', 'error');
 		}
@@ -318,6 +340,14 @@ function toggleEcoMode() {
 	startPolling();
 }
 
+function toggleAutoEnergy() {
+	autoEnergy = document.getElementById('autoEnergy').checked;
+	if (autoEnergy) {
+		lastEnergyMs = 0;
+		refreshEnergy();
+	}
+}
+
 function updateVisibility() {
 	lowPower = document.hidden;
 	document.getElementById('lowPowerBadge').style.display = lowPower ? 'inline' : 'none';
@@ -331,13 +361,20 @@ function startPolling() {
 	pollingInterval = setInterval(async () => {
 		await refreshStats();
 		await refreshLeds();
+		if (autoEnergy) {
+			const now = Date.now();
+			if (now - lastEnergyMs > 1500) {
+				await refreshEnergy();
+				lastEnergyMs = now;
+			}
+		}
 	}, pollMs);
 }
 
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
 	switch (e.key.toUpperCase()) {
-		case 'B': simulateButton(); break;
+		case 'B': lightLoad(); break;
 		case 'L': generateLoad(); break;
 		case ' ': e.preventDefault(); document.getElementById('ecoMode').click(); break;
 	}
@@ -362,23 +399,18 @@ function showNotification(message, type = 'info') {
 	notification.className = `notification ${type}`;
 	notification.textContent = message;
 	container.appendChild(notification);
-	
-	// Auto remove after 3 seconds
-	setTimeout(() => {
-		if (notification.parentNode) {
-			notification.parentNode.removeChild(notification);
-		}
-	}, 3000);
+	setTimeout(() => { if (notification.parentNode) notification.parentNode.removeChild(notification); }, 3000);
 }
 
-// Debug: Test if functions are available
-console.log('Functions available:', {
-	simulateButton: typeof simulateButton,
-	generateLoad: typeof generateLoad,
-	updateBarPattern: typeof updateBarPattern,
-	computeEnergy: typeof computeEnergy,
-	resetEnergy: typeof resetEnergy
-});
+function flashCpu(){
+	const el = document.getElementById('cpu');
+	if(!el) return;
+	el.classList.remove('cpu-flash');
+	void el.offsetWidth; // force reflow to restart animation
+	el.classList.add('cpu-flash');
+}
+
+console.log('Functions available:', { lightLoad: typeof lightLoad, generateLoad: typeof generateLoad, updateBarPattern: typeof updateBarPattern, computeEnergy: typeof computeEnergy, resetEnergy: typeof resetEnergy });
 </script>
 </body>
 </html>

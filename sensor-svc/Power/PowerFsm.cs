@@ -37,16 +37,17 @@ public sealed class PowerFsm
 	{
 		_ = Task.Run(async () =>
 		{
-			if (!_enabled)
-			{
-				lock (_lock) CurrentState = FsmState.Active;
-			}
+			// Even if FSM disabled we still accumulate Active time for energy math
+			if (!_enabled) { lock (_lock) CurrentState = FsmState.Active; }
 
 			while (!_cts.IsCancellationRequested)
 			{
 				try
 				{
-					UpdateStateIfNeeded(getLastRequestMs);
+					if (_enabled)
+						UpdateStateIfNeeded(getLastRequestMs);
+					else
+						AccumulateTimeOnly(); // no transitions, just time in Active
 
 					int delayMs = CurrentState switch
 					{
@@ -66,8 +67,7 @@ public sealed class PowerFsm
 
 	private void UpdateStateIfNeeded(Func<long> getLastRequestMs)
 	{
-		if (!_enabled) return;
-
+		if (!_enabled) return; // should not be called when disabled, defensive
 		var nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 		var lastReqMs = getLastRequestMs();
 		var sinceReqS = (nowMs - lastReqMs) / 1000.0;
@@ -95,7 +95,11 @@ public sealed class PowerFsm
 			lock (_lock) CurrentState = newState;
 		}
 		
-		// Accumulate time in current state
+		AccumulateTimeOnly();
+	}
+
+	private void AccumulateTimeOnly()
+	{
 		var now = DateTime.UtcNow;
 		var dt = (now - _prevTime).TotalSeconds;
 		_prevTime = now;

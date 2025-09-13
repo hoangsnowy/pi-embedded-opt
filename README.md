@@ -7,12 +7,16 @@ Minimal .NET 8 service for ARM64 containers (Raspberry Pi class) with runtime po
 - Request latency middleware with sliding buffer (≤512) and p50/p95
 - CPU% sampler via process `TotalProcessorTime` (~800ms window)
 - Application-level Power FSM (Active → Idle → Sleep), env-driven
-- Energy panel: enter P_active/P_idle/P_sleep (mW) → shows mWh; Reset clears counters
-- LED grid: 10 virtual LEDs with pattern controls and bar slider
+ - Energy panel: enter P_active/P_idle/P_sleep (mW) → shows System mWh (base FSM time-weighted energy), LED mWh, and Total; Reset clears counters
+- LED grid: 10 virtual LEDs (10MB per LED when ON) with pattern controls and bar slider (LED time sampled before each pattern change for accurate energy)
 - Rich HTML dashboard with eco mode and visibility throttling
+  - Passive polling endpoints excluded from activity → FSM can Idle/Sleep while dashboard open
 - Same image runs Baseline (FSM off) and Tuned (FSM on + cgroups + read-only + tmpfs)
 - Scripts to collect stats to CSV and plot PNG charts
 - PlantUML diagrams for FSM and runtime architecture
+
+### Activity Gating (Tuned Mode)
+FSM activity timestamp is only refreshed by: (1) Work endpoints (`/button/press`, `/load`), (2) Having >=1 LED ON, (3) CPU percent > 2%. Passive polling (`/stats`, `/leds`, `/energy`) never keeps the system Active. A background quiescence task ages the last-activity time if no LEDs are on and nothing happens for ~2s, accelerating transition to Idle/Sleep. This makes the energy demo clearer: turn all LEDs off and stop work → quickly drop to Idle/Sleep.
 
 ## Build
 Publish on host first (Dockerfile copies from `sensor-svc/out-linux-arm64`):
@@ -73,35 +77,30 @@ python3 scripts/plot_from_csv.py stats_tuned.csv
 
 ## Endpoints
 - `GET /health` → `ok`
-- `GET /stats` → `{uptime_s, rss_mib, cpu_pct, p50_ms, p95_ms, state}`
-- `GET /energy?Pact&Pidle&Psleep` → `{sAct, sIdle, sSlp, mWh}`
-- `POST /energy/reset` → Reset time counters
+- `GET /stats` → `{uptimeSeconds, rssMiB, cpuPercent, p50Ms, p95Ms, state}`
+- `GET /energy?Pact&Pidle&Psleep` → `{sAct, sIdle, sSlp, mWh, ledActSeconds, ledIdleSeconds, ledSlpSeconds, ledMWh, totalMWh}`
+- `POST /energy/reset` → Reset time + LED energy counters
 - `GET /host` → `{cpuProcPct, rssMB, gcMB, threads, rps}`
-- `GET /leds` → `{pins, states}` (10 LED states)
+- `GET /diag/mem` → GC & memory diagnostics `{heapSizeMB, fragmentedMB, committedMB, gen0, gen1, gen2, workingSetMB, privateMB, lohCompactionMode, pauseLastMs, pauseAvgMs, time}`
+- `GET /leds` → `{pins, states}` (LED_COUNT states)
 - `POST /leds/pattern` → Set LED pattern from binary string
 - `POST /leds/pattern/bar/{n}` → Set first n LEDs on
-- `POST /button/press` → Simulate button press
-- `POST /load` → Generate CPU load
-- `GET /ui` → HTML dashboard (refresh ~2s)
+- `POST /button/press` → Light CPU load (~2s burst)
+- `POST /load` → Heavy CPU load (~5s)
+- `POST /gc` → Force GC (demo memory reclaim)
+- `GET /ui` → HTML dashboard (stats + LEDs poll 0.5–2s; optional auto energy refresh ~1.5s cadence)
 
 ## Environment
-- `POWER_FSM` (0/1)
-- `SAMPLE_ACTIVE_HZ` (default 100)
-- `SAMPLE_IDLE_HZ` (1)
-- `ACTIVE_WINDOW_S` (10)
-- `SLEEP_AFTER_S` (60)
+- `POWER_FSM` (0/1 enable FSM)
+- `SAMPLE_ACTIVE_HZ`, `SAMPLE_IDLE_HZ` (CPU sampler / stats freq knobs) *(if implemented)*
+- `ACTIVE_WINDOW_S`, `SLEEP_AFTER_S` (FSM thresholds)
+- `LED_COUNT` (default 10)
+- `LED_MW` (default 50) per-LED mW used for LED energy share.
+- `LED_POOL` (0/1) enable reuse of 10MB LED buffers instead of freeing (reduces LOH churn, stabilizes RSS growth trend)
 
-## Compose Profiles
-- `docker-compose.yml`: Baseline (FSM off)
-- `docker-compose.tuned.yml`: Adds mem/cpu/pids limits, read_only, tmpfs, no-new-privileges, FSM on
-
-## Diagrams
-- FSM: `diagrams/fsm.puml`
-- Architecture: `diagrams/architecture.puml`
-
-## Quick Reference
-
-| Command | Description |
+Extended /energy fields produced automatically (no env needed): `ledActSeconds`, `ledIdleSeconds`, `ledSlpSeconds`, `ledMWh`, `totalMWh`.
+In UI: "System mWh" = energy from base platform draw (state times × P_active/P_idle/P_sleep). "LED mWh" = additional LED contribution. "Total" = sum.
+Auto energy: UI now has an "Auto Energy" checkbox (default ON) that periodically refreshes `/energy` so LED power accrues visibly without manual Compute.
 |---------|-------------|
 | `docker compose up -d` | Backend with dashboard (port 8080) |
 | `docker compose -f docker-compose.tuned.yml up -d` | Backend with FSM enabled |

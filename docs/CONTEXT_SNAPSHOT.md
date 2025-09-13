@@ -22,8 +22,14 @@ Minimal .NET 8 service for ARM64 containers (Raspberry Pi class) with runtime po
 
 ### Endpoints
 - `GET /health` → `ok` (health check)
-- `GET /stats` → JSON metrics (uptime, memory, CPU, latency, state)
-- `GET /ui` → HTML dashboard (auto-refreshing)
+- `GET /stats` → Dynamic metrics: `uptime_s, rss_mib, cpu_pct, p50_ms, p95_ms, state` (latency buffer ≤512, CPU sampler ~800ms) – passive polling no longer marks activity
+- `GET /energy?Pact&Pidle&Psleep` → Time-in-state counters (sAct/sIdle/sSlp) + computed `mWh` from power inputs
+	- Extended fields: `ledAct_s, ledIdle_s, ledSlp_s, led_mWh, total_mWh` (per-LED power via LED_MW, default 50 mW)
+- `POST /energy/reset` → Reset FSM time counters
+- `GET /leds` / `POST /leds/pattern` / `POST /leds/pattern/bar/{n}` → LED demo state (1MB per ON LED allocated, freed when OFF)
+- `POST /button/press` → Simulated 2s CPU burst (updates latency + CPU metrics)
+- `POST /load` → Simulated heavier 5s CPU burst
+- `GET /ui` → HTML dashboard (polls /stats, /leds, /energy)
 - `GET /` → Redirect to `/ui`
 
 ### Environment Variables
@@ -32,6 +38,8 @@ Minimal .NET 8 service for ARM64 containers (Raspberry Pi class) with runtime po
 - `SAMPLE_IDLE_HZ`: Idle state sampling rate (default: 1)
 - `ACTIVE_WINDOW_S`: Seconds before Idle transition (default: 10)
 - `SLEEP_AFTER_S`: Additional seconds before Sleep (default: 60)
+- `LED_COUNT`: Number of virtual LEDs (default 10)
+ - `LED_MW`: Power (mW) per single LED ON (default 50) used in energy calculation
 
 ### Container Configurations
 - **Baseline**: `docker-compose.yml` (FSM off, standard limits)
@@ -43,12 +51,12 @@ Minimal .NET 8 service for ARM64 containers (Raspberry Pi class) with runtime po
 - **diagrams/**: PlantUML architecture and FSM diagrams
 
 ## Current State
-- ✅ Core service implemented and functional
-- ✅ Power FSM with configurable parameters
-- ✅ Real-time metrics collection and display
+- ✅ Core service running with dynamic CPU & latency metrics (sampler + middleware)
+- ✅ Power FSM active: transitions Active→Idle→Sleep based on last request; time-in-state counters feed /energy
+- ✅ Energy endpoint now computes mWh from real accumulated time * provided mW values
 - ✅ Docker containerization for ARM64
-- ✅ Performance testing and visualization tools
-- ✅ Comprehensive documentation structure
+- ✅ Scripts + plotting for experiments
+- ✅ Documentation kept in sync (this snapshot)
 
 ## Next Steps
 - [Quick Start](QUICKSTART.md) - Get started with the service
