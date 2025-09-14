@@ -16,7 +16,7 @@ Minimal .NET 8 service for ARM64 containers (Raspberry Pi class) with runtime po
 - PlantUML diagrams for FSM and runtime architecture
 
 ## UI (Dashboard Overview)
-![Dashboard Overview](docs/ui-screenshot.png)
+![Dashboard Overview](docs/PI_UI.png)
 
 ### Panels
 - Stats Header: Uptime, FSM State (Active/Idle/Sleep), CPU%, RSS MiB, latency p50/p95.
