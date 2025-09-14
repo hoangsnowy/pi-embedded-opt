@@ -15,6 +15,41 @@ Minimal .NET 8 service for ARM64 containers (Raspberry Pi class) with runtime po
 - Scripts to collect stats to CSV and plot PNG charts
 - PlantUML diagrams for FSM and runtime architecture
 
+## UI (Dashboard Overview)
+![Dashboard Overview](docs/ui-screenshot.png)
+
+### Panels
+- Stats Header: Uptime, FSM State (Active/Idle/Sleep), CPU%, RSS MiB, latency p50/p95.
+- Energy Panel: Inputs (P_active / P_idle / P_sleep mW) + live computed System mWh, LED mWh, Total mWh, and Reset button.
+- LED Grid: 10 virtual LEDs (10MB each ON). Pattern input + Bar slider to set first N LEDs ON. LED activity influences FSM.
+- Load Controls: `Light Load` (~2s) & `Heavy Load` (~5s) CPU bursts.
+- Eco Mode Toggle: Slows polling + dims UI.
+- Auto Energy Checkbox: Periodic `/energy` pulls (≈1.5s) when enabled.
+- Notifications Area: Context hints (power input missing, LED notes, etc.).
+
+### Polling Behavior
+- `/stats`,`/leds` every 0.5–2s (visibility & eco aware).
+- `/energy` only when Auto Energy ON.
+- Polling does not refresh activity → FSM can Idle/Sleep with page open.
+
+### Visual Feedback
+- CPU flash highlight on bursts.
+- LED ON blocks highlighted.
+- Energy numbers update; LED seconds snapshot before pattern changes.
+
+### Quick Demo Flow
+1. Open `/ui` (leave power blank → counters paused).
+2. Enter sample powers (e.g. 500 / 120 / 20) → System mWh starts.
+3. Turn on LEDs via slider → LED mWh grows.
+4. Hit Light/Heavy load to keep Active.
+5. Turn off LEDs & stop load → watch Idle then Sleep.
+6. Reset and repeat.
+
+### Design Goals
+- Tiny, dependency‑light, deterministic teaching UI.
+- Clear separation: base (System) vs incremental (LED) energy.
+- Minimal noise so FSM transitions are obvious.
+
 ### Activity Gating (Tuned Mode)
 FSM activity timestamp is only refreshed by: (1) Work endpoints (`/button/press`, `/load`), (2) Having >=1 LED ON, (3) CPU percent > 2%. Passive polling (`/stats`, `/leds`, `/energy`) never keeps the system Active. A background quiescence task ages the last-activity time if no LEDs are on and nothing happens for ~2s, accelerating transition to Idle/Sleep. This makes the energy demo clearer: turn all LEDs off and stop work → quickly drop to Idle/Sleep.
 
